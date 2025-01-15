@@ -2,6 +2,8 @@ package tasks
 
 import (
 	"fmt"
+	"log"
+	"os"
 )
 
 type Task struct {
@@ -42,30 +44,40 @@ func (tl *TaskList) AddTaskToList(t Task) {
 
 func (tl *TaskList) DeleteTask(t Task) {}
 
+// TODO: Add method to show only incomplete tasks, and only complete tasks
 func (tl *TaskList) ViewTaskList() {
 	for idx := range tl.Tasks {
 		t := tl.Tasks[idx]
 		// fmt.Printf("\nTitle: %v\n", t.Title)
 		// fmt.Printf("Description: %v\n", t.Description)
 		// fmt.Printf("Completed: %v\n", t.Completed)
+		// fmt.Printf("ID: %v\n", t.Id)
 		fmt.Printf(`
-            Title: %v
-            Description: %v
-            Completed: %v
-            ID: %v
+    Title: %v
+    Description: %v
+    Completed: %v
+    ID: %v
             `, t.Title, t.Description, t.Completed, t.Id)
 	}
 }
 
+// TODO: Add UI for these.
 // Mark a task as completed
 func (t *Task) MarkComplete() { t.Completed = true }
-
-// TODO: Add method to show only incomplete tasks, and only complete tasks
 
 func (t *Task) ChangeDescription(newDesc string) { t.Description = newDesc }
 func (t *Task) ChangeTitle(newTitle string)      { t.Title = newTitle }
 
-func (*TaskList) LoadTaskList() {}
+func (*TaskList) LoadTaskList() {
+	path := "/etc/terminal-todo/tasklist.json"
+	fmt.Printf("Attempting to open file at; %v\n", path)
+	file, err := os.Open(path)
+	if err != nil {
+		log.Printf("Couldn't open file /etc/terminal-todo/tasklist.json")
+	}
+	defer file.Close()
+}
+
 func (*TaskList) SaveTaskList() {}
 
 func MakeGreeting(first string, last string) string {
