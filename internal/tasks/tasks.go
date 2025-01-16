@@ -6,6 +6,23 @@ import (
 	"os"
 )
 
+var Colors = map[string]string{
+	"black":   "\033[30m",
+	"red":     "\033[31m",
+	"green":   "\033[32m",
+	"yellow":  "\033[33m",
+	"blue":    "\033[34m",
+	"magenta": "\033[35m",
+	"cyan":    "\033[36m",
+	"white":   "\033[37m",
+	"":        "\033[0m",
+}
+
+var CompletedColor = map[bool]string{
+	true:  Colors["green"],
+	false: Colors["red"],
+}
+
 type Task struct {
 	Title       string
 	Description string
@@ -42,26 +59,36 @@ func (tl *TaskList) AddTaskToList(t Task) {
 	tl.nextTaskId++
 }
 
+func (t *Task) formatOutput() string {
+	outputStr := fmt.Sprintf(`
+    - Task
+      %vTitle: %v
+      %vDescription: %v
+      %vCompleted: %v
+      %v
+    `,
+		Colors["cyan"],
+		Colors[""]+
+			t.Title,
+		Colors["yellow"],
+		Colors[""]+
+			t.Description,
+		CompletedColor[t.Completed],
+		t.Completed,
+		Colors[""],
+	)
+	return outputStr
+}
+
 func (tl *TaskList) DeleteTask(t Task) {}
 
 // ViewTaskList Outputs the current task list to the terminal
 // TODO: Add method (or option) to show only incomplete tasks, and only complete tasks
 func (tl *TaskList) ViewTaskList() {
-	fmt.Println("--- All tasks ---")
+	fmt.Println("\033[32m--- All tasks ---\033[0m")
 	for idx := range tl.Tasks {
-		t := tl.Tasks[idx]
-		// fmt.Printf("\nTitle: %v\n", t.Title)
-		// fmt.Printf("Description: %v\n", t.Description)
-		// fmt.Printf("Completed: %v\n", t.Completed)
-		// fmt.Printf("ID: %v\n", t.Id)
-		fmt.Printf(`
-Task:
-
-    Title: %v
-    Description: %v
-    Completed: %v
-    ID: %v
-            `, t.Title, t.Description, t.Completed, t.Id)
+		output := tl.Tasks[idx].formatOutput()
+		fmt.Println(output)
 	}
 }
 
@@ -69,15 +96,8 @@ func (tl *TaskList) ViewCompletedTasks() {
 	fmt.Println("--- Completed Tasks ---")
 	completedTasks := tl.GetCompletedTasks()
 	for idx := range completedTasks {
-		t := completedTasks[idx]
-		fmt.Printf(`
-Completed task:
-
-    Title: %v 
-    Description: %v
-    Completed: %v
-    ID: %v
-            `, t.Title, t.Description, t.Completed, t.Id)
+		output := completedTasks[idx].formatOutput()
+		fmt.Println(output)
 	}
 }
 
@@ -102,6 +122,14 @@ func (t *Task) ChangeTitle(newTitle string)      { t.Title = newTitle }
 
 func (*TaskList) LoadTaskList() {
 	path := "/etc/terminal-todo/tasklist.json"
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		fmt.Printf("Storage file does not exist at %s. Creating one.\n", path)
+		os.Create(path)
+	} else {
+		fmt.Printf("fileInfo: %s\n", fileInfo)
+		fmt.Printf("fileinfo.IsDir: %v\n", fileInfo.IsDir())
+	}
 	fmt.Printf("Attempting to open file at; %v\n", path)
 	file, err := os.Open(path)
 	if err != nil {
