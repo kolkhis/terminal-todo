@@ -8,33 +8,42 @@ import (
 	t "github.com/kolkhis/terminal-todo/internal/tasks"
 )
 
-func GetInputForTask() {}
-
 func main() {
 	var tl t.TaskList = t.NewTaskList()
-	tl.LoadTaskList()
-	// tl := t.NewTaskList()
+	tl.LoadTaskList() // if it exists - TODO: Add file support
 
 	fmt.Println("Terminal TODO")
 
 	newT := t.NewTask("Finish project", "Finish the cli task list project", 0)
 	tl.AddTaskToList(newT)
+	tl.Tasks[0].Completed = true
 	fmt.Printf("Current task list:\n")
 	tl.ViewTaskList()
 
-	fmt.Println(`
-	Select an option:
-	1. Create a new task
-	2. Remove a task
-	3. Mark a task as complete
-	4. View task list
-	`)
+	fmt.Printf("Current completed task list:\n")
+	tl.ViewCompletedTasks()
+
+	fmt.Print(`
+Select an option:
+      1. Create a new task
+      2. Remove a task
+      3. Mark a task as complete
+      4. View task list
+
+    'q' or '0' to quit. 
+
+> `)
 
 	var choice int
+
 	fmt.Scanln(&choice)
 
 	s := bufio.NewScanner(os.Stdin)
 	switch choice {
+	case 0:
+		// User entered zero or a non-digit
+		fmt.Println("Exiting.")
+		os.Exit(0)
 	case 1:
 		fmt.Println("--- Add a task ---")
 		fmt.Print("New task name: ")
