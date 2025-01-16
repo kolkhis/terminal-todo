@@ -44,8 +44,10 @@ func (tl *TaskList) AddTaskToList(t Task) {
 
 func (tl *TaskList) DeleteTask(t Task) {}
 
-// TODO: Add method to show only incomplete tasks, and only complete tasks
+// ViewTaskList Outputs the current task list to the terminal
+// TODO: Add method (or option) to show only incomplete tasks, and only complete tasks
 func (tl *TaskList) ViewTaskList() {
+	fmt.Println("--- All tasks ---")
 	for idx := range tl.Tasks {
 		t := tl.Tasks[idx]
 		// fmt.Printf("\nTitle: %v\n", t.Title)
@@ -53,6 +55,8 @@ func (tl *TaskList) ViewTaskList() {
 		// fmt.Printf("Completed: %v\n", t.Completed)
 		// fmt.Printf("ID: %v\n", t.Id)
 		fmt.Printf(`
+Task:
+
     Title: %v
     Description: %v
     Completed: %v
@@ -61,8 +65,36 @@ func (tl *TaskList) ViewTaskList() {
 	}
 }
 
+func (tl *TaskList) ViewCompletedTasks() {
+	fmt.Println("--- Completed Tasks ---")
+	completedTasks := tl.GetCompletedTasks()
+	for idx := range completedTasks {
+		t := completedTasks[idx]
+		fmt.Printf(`
+Completed task:
+
+    Title: %v 
+    Description: %v
+    Completed: %v
+    ID: %v
+            `, t.Title, t.Description, t.Completed, t.Id)
+	}
+}
+
+// Return a slice containing pointers/references to the actual tasks in the main
+// TaskList that are marked as complete.
+func (tl *TaskList) GetCompletedTasks() []*Task {
+	var ct []*Task
+	for idx := range tl.Tasks {
+		if tl.Tasks[idx].Completed {
+			ct = append(ct, &tl.Tasks[idx])
+		}
+	}
+	return ct
+}
+
 // TODO: Add UI for these.
-// Mark a task as completed
+// MarkComplete() marks a task as completed, changing its Completed property to true
 func (t *Task) MarkComplete() { t.Completed = true }
 
 func (t *Task) ChangeDescription(newDesc string) { t.Description = newDesc }
