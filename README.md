@@ -41,5 +41,6 @@ todo modify
 Choice between two different modes
 - Interactive Mode
 - One-off ad-hoc command mode
+- Support for multiple task lists
 
 
