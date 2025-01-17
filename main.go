@@ -53,7 +53,6 @@ Select an option:
 		fmt.Print("New Task description: ")
 		s.Scan()
 		desc := s.Text()
-		id := len(tl.Tasks) + 1
 
 		fmt.Printf(`
         New Task Created:
@@ -69,7 +68,7 @@ Select an option:
 			confirmation = s.Text()
 			switch confirmation {
 			case "y":
-				newTask := t.NewTask(title, desc, id)
+				newTask := t.NewTask(title, desc)
 				tl.AddTaskToList(newTask)
 				tl.SaveTaskList()
 				break
