@@ -36,6 +36,8 @@ type TaskList struct {
 	Tasks       []Task `json:"tasks"`
 	NextTaskId  int    `json:"nextTaskId"`
 	storageFile string
+	// TODO: Map task IDs to tasks for easier management/deletion
+	// TaskIndex map[int]*Task
 }
 
 func NewTaskList() TaskList {
@@ -51,29 +53,30 @@ func NewTaskList() TaskList {
 }
 
 // Constructor for Task
-func NewTask(title, desc string, id int) Task {
+func NewTask(title, desc string) Task {
 	t := Task{
 		Title:       title,
 		Description: desc,
-		Id:          id,
 		Completed:   false,
 	}
 	return t
-}
-
-func (tl *TaskList) DeleteTask(t Task) {
-	for i := range len(tl.Tasks) {
-		if t.Id == tl.Tasks[i].Id {
-			// remove from list
-			// tl.Tasks[i]
-		}
-	}
 }
 
 func (tl *TaskList) AddTaskToList(t Task) {
 	t.Id = tl.NextTaskId
 	tl.Tasks = append(tl.Tasks, t)
 	tl.NextTaskId++
+	// tl.TaskIndex[t.Id] = &tl.Tasks[len(tl.Tasks)-1]
+}
+
+func (tl *TaskList) DeleteTask(t Task) {
+	// TODO: Utilize TaskIndex for deletion.
+	for i := range len(tl.Tasks) {
+		if t.Id == tl.Tasks[i].Id {
+			// remove from list
+			// tl.Tasks[i]
+		}
+	}
 }
 
 func (t *Task) formatTaskOutput() string {
