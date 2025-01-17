@@ -22,21 +22,13 @@ func main() {
 
 	fmt.Println("Terminal TODO")
 
-	newT := t.NewTask("Finish project", "Finish the cli task list project", 0)
-	tl.AddTaskToList(newT)
-	tl.Tasks[0].Completed = true
-	fmt.Printf("Current task list:\n")
-	tl.ViewTaskList()
-
-	fmt.Printf("Current completed task list:\n")
-	tl.ViewCompletedTasks()
-
 	fmt.Print(`
 Select an option:
       1. Create a new task
       2. Remove a task
       3. Mark a task as complete
       4. View task list
+      5. Save task list to file
 
     'q' or '0' to quit. 
 
@@ -79,6 +71,7 @@ Select an option:
 			case "y":
 				newTask := t.NewTask(title, desc, id)
 				tl.AddTaskToList(newTask)
+				tl.SaveTaskList()
 				break
 			case "n":
 				fmt.Println("OK - Discarding task.")
@@ -105,7 +98,8 @@ Select an option:
 			fmt.Printf("Description:%v\n", tl.Tasks[t].Description)
 			fmt.Printf("Completed: %v\n\n", tl.Tasks[t].Completed)
 		}
-
+	case 5:
+		tl.SaveTaskList()
 	}
 
 }
