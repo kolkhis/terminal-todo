@@ -65,17 +65,21 @@ func NewTask(title, desc string) Task {
 func (tl *TaskList) AddTaskToList(t Task) {
 	t.Id = tl.NextTaskId
 	tl.Tasks = append(tl.Tasks, t)
-	tl.NextTaskId++
 	// tl.TaskIndex[t.Id] = &tl.Tasks[len(tl.Tasks)-1]
+	tl.NextTaskId++
 }
 
-func (tl *TaskList) DeleteTask(t Task) {
-	// TODO: Utilize TaskIndex for deletion.
-	for i := range len(tl.Tasks) {
-		if t.Id == tl.Tasks[i].Id {
-			// remove from list
-			// tl.Tasks[i]
+func (tl *TaskList) DeleteTask(id int) {
+	log.Printf("START: Number of tasks: %v\n", len(tl.Tasks))
+	for i := len(tl.Tasks) - 1; i >= 0; i-- {
+		if id == tl.Tasks[i].Id {
+			tl.Tasks = append(tl.Tasks[:i], tl.Tasks[i+1:]...) //TODO: Handle when it's the last element
+			log.Printf("%vAppend operation complete%v\n", Colors["green"], Colors[""])
+			tl.ViewTaskList()
+			log.Printf("DONE: Number of tasks: %v\n", len(tl.Tasks))
+			return
 		}
+
 	}
 }
 

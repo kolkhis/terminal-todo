@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 
 	t "github.com/kolkhis/terminal-todo/internal/tasks"
 )
@@ -87,16 +88,24 @@ Select an option:
 		fmt.Println("Current tasks:")
 		tl.ViewTaskList()
 	case 2:
-		fmt.Println("Remove a task")
+		fmt.Println("--- Remove a task ---")
+		fmt.Print("Enter task ID:\n> ")
+		s.Scan()
+		taskToDel := s.Text()
+
+		id, err := strconv.ParseInt(taskToDel, 10, 0)
+		if err != nil {
+			fmt.Printf("Error in ParseInt: %v\n", err)
+		} else {
+			tl.DeleteTask(int(id))
+			tl.SaveTaskList()
+		}
+
 	case 3:
 		fmt.Println("Mark a task as complete.")
 	case 4:
 		fmt.Println("View task list")
-		for t := 0; t < len(tl.Tasks); t++ {
-			fmt.Printf("Title: %v\n", tl.Tasks[t].Title)
-			fmt.Printf("Description:%v\n", tl.Tasks[t].Description)
-			fmt.Printf("Completed: %v\n\n", tl.Tasks[t].Completed)
-		}
+		tl.ViewTaskList()
 	case 5:
 		tl.SaveTaskList()
 	}
