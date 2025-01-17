@@ -8,6 +8,14 @@ import (
 	t "github.com/kolkhis/terminal-todo/internal/tasks"
 )
 
+// func HandleArgs() {
+//     if len(os.Args) > 0 {
+//         switch os.Args[0] {
+//         case "add":
+//         }
+//     }
+// }
+
 func main() {
 	var tl t.TaskList = t.NewTaskList()
 	tl.LoadTaskList() // if it exists - TODO: Add file support
