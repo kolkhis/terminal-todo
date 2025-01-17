@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -25,14 +26,14 @@ var CompletedColor = map[bool]string{
 }
 
 type Task struct {
-	Title       string
-	Description string
-	Completed   bool
-	Id          int
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Completed   bool   `json:"completed"`
+	Id          int    `json:"id"`
 }
 
 type TaskList struct {
-	Tasks       []Task
+	Tasks       []Task `json:"tasks"`
 	nextTaskId  int
 	storageFile string
 }
@@ -222,13 +223,18 @@ func (tl *TaskList) LoadTaskList() {
 
 }
 
-// func (tl *TaskList) SaveTaskList() {
-// 	jsonData, err := json.MarshalIndent(tl, "", "    ")
-// 	file, err := os.Open()
-// 	if err != nil {
-// 		log.Fatalf("Failed to open file for writing: %v\n", err)
-// 	}
-// }
+func (tl *TaskList) SaveTaskList() {
+	file, err := os.Open(tl.storageFile)
+	if err != nil {
+		log.Fatalf("Failed to open file for writing: %v\n", err)
+	}
+	defer file.Close()
+	jsonData, err := json.MarshalIndent(tl, "", "    ")
+	if err != nil {
+		log.Fatalf("Couldn't marshal data to json: %v\n", err)
+	}
+	file.Write(jsonData)
+}
 
 // TODO: Add UI for these.
 // MarkComplete() marks a task as completed, changing its Completed property to true
