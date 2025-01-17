@@ -34,13 +34,13 @@ type Task struct {
 
 type TaskList struct {
 	Tasks       []Task `json:"tasks"`
-	nextTaskId  int
+	NextTaskId  int    `json:"nextTaskId"`
 	storageFile string
 }
 
 func NewTaskList() TaskList {
 	tl := TaskList{
-		nextTaskId: 0,
+		NextTaskId: 0,
 	}
 	storageDir, err := os.UserConfigDir()
 	if err != nil {
@@ -71,9 +71,9 @@ func (tl *TaskList) DeleteTask(t Task) {
 }
 
 func (tl *TaskList) AddTaskToList(t Task) {
-	t.Id = tl.nextTaskId
+	t.Id = tl.NextTaskId
 	tl.Tasks = append(tl.Tasks, t)
-	tl.nextTaskId++
+	tl.NextTaskId++
 }
 
 func (t *Task) formatTaskOutput() string {
@@ -82,6 +82,7 @@ func (t *Task) formatTaskOutput() string {
       %vTitle: %v
       %vDescription: %v
       %vCompleted: %v
+      ID: %v
       %v
     `,
 		Colors["cyan"],
@@ -92,6 +93,7 @@ func (t *Task) formatTaskOutput() string {
 			t.Description,
 		CompletedColor[t.Completed],
 		t.Completed,
+		t.Id,
 		Colors[""],
 	)
 	return outputStr
@@ -159,24 +161,29 @@ func checkStorageFileDir() (bool, error) {
 
 func (tl *TaskList) checkStorageFile() (bool, error) {
 
-	_, err := os.Stat(tl.storageFile)
+	info, err := os.Stat(tl.storageFile)
 	if err != nil {
 		fmt.Printf(Colors["red"]+"Failed to stat file at %v: %v\n"+Colors[""], tl.storageFile, err)
 		if errors.Is(err, os.ErrNotExist) {
 			fmt.Printf(Colors["red"]+"Error - File %v doesn't exist: %v\n"+Colors[""], tl.storageFile, err)
 			fmt.Printf("Storage file does not exist at %s.\nCreating one...\n", tl.storageFile)
-			return false, fmt.Errorf("Couldn't ")
 		} else {
 			fmt.Printf("Ran into error while checking directory: %v\n", err)
 		}
+	} else {
+		if info.Mode().IsRegular() {
+			fmt.Printf("Regular file found at %v\n", info.Name())
+			return true, nil
+		}
+		return false, fmt.Errorf("Storage file %v is not a regular file. FileMode: %v\n", info.Name(), info.Mode())
 	}
-
-	_, err = os.Create(tl.storageFile)
+	f, err := os.Create(tl.storageFile)
 
 	if err != nil {
 		fmt.Printf("Ran into error when creating file %v: %v\n", tl.storageFile, err)
 		return false, err
 	} else {
+		f.Chmod(0777)
 		return true, nil
 	}
 }
@@ -211,8 +218,18 @@ func (tl *TaskList) LoadTaskList() {
 
 	log.Printf("Size of the file: %v", fileInfo.Size())
 	if fileInfo.Size() == 0 {
-		log.Printf("Storage file %v is empty. Creating new task list.", fileInfo.Name())
+		log.Printf("Storage file %v is empty. Using new task list.\n", fileInfo.Name())
+		return
 	}
+	decoder := json.NewDecoder(file)
+	if err = decoder.Decode(tl); err != nil {
+		log.Fatalf("Failed to read in contents of json file: %v\n", err)
+	}
+
+	fmt.Printf(Colors["green"]+"New Task list (from json):\n%v\n", tl)
+	fmt.Printf(Colors["green"]+"nextTaskID: %v \n", tl.NextTaskId)
+
+	tl.ViewTaskList()
 	// TODO: If not empty, parse contents into a TaskList()
 	//       Handle NextTaskId by len(tl.Tasks) + 1
 	// TODO: Convert json contents into valid Go data structure
@@ -224,16 +241,23 @@ func (tl *TaskList) LoadTaskList() {
 }
 
 func (tl *TaskList) SaveTaskList() {
-	file, err := os.Open(tl.storageFile)
+	file, err := os.OpenFile(tl.storageFile, os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
 		log.Fatalf("Failed to open file for writing: %v\n", err)
 	}
 	defer file.Close()
-	jsonData, err := json.MarshalIndent(tl, "", "    ")
+	jsonData, err := json.MarshalIndent(*tl, "", "\t")
 	if err != nil {
 		log.Fatalf("Couldn't marshal data to json: %v\n", err)
 	}
-	file.Write(jsonData)
+	fmt.Printf("Writing task list to file %v\n", tl.storageFile)
+	fmt.Printf("Data being written:\n%v\n", tl)
+	fmt.Printf("jsonData being written:\n%v\n", jsonData)
+	bw, err := file.Write(jsonData)
+	if err != nil {
+		log.Fatalf("Couldn't write to file: %v\n", err)
+	}
+	fmt.Printf("%v bytes written.\n", bw)
 }
 
 // TODO: Add UI for these.
