@@ -32,14 +32,20 @@ type Task struct {
 }
 
 type TaskList struct {
-	Tasks      []Task
-	nextTaskId int
+	Tasks       []Task
+	nextTaskId  int
+	storageFile string
 }
 
 func NewTaskList() TaskList {
 	tl := TaskList{
 		nextTaskId: 0,
 	}
+	storageDir, err := os.UserConfigDir()
+	if err != nil {
+		log.Fatalf("Couldn't set the storage file for task list: %v\n", err)
+	}
+	tl.storageFile = storageDir + "/terminal-todo/tasklist.json"
 	return tl
 }
 
@@ -122,10 +128,16 @@ func (tl *TaskList) GetCompletedTasks() []*Task {
 }
 
 // Check the storage file path, create it if it doesn't exist.
-func checkStorageFileDir(basepath string) bool {
-	fmt.Printf("\033[31m --- Base path for storage file: %v ---\n\033[0m", basepath)
+func checkStorageFileDir() (bool, error) {
 	// Create file if it's not there
 	// Create directory if it's not there
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return false, fmt.Errorf("Error while trying to access the user's configuration dir: %v\n", err)
+	}
+	basepath := configDir + "/terminal-todo/"
+
+	fmt.Printf("\033[31m --- Base path for storage file: %v ---\n\033[0m", basepath)
 	fileInfo, err := os.Stat(basepath)
 	if err != nil {
 		fmt.Printf("Failed to stat directory at %v: %v\n", basepath, err)
@@ -133,79 +145,93 @@ func checkStorageFileDir(basepath string) bool {
 		err = os.MkdirAll(basepath, os.FileMode(0755))
 		if err != nil {
 			fmt.Printf(Colors["red"]+"Error creating directory at %v: %v\n"+Colors[""], basepath, err)
-			return false
+			return false, fmt.Errorf("Failed to create directory at %v\n", basepath)
 		} else {
 			fmt.Printf("\033[32mSuccessfully created directory: %v\n", basepath)
 		}
 	} else if fileInfo.IsDir() {
-		return true
+		return true, nil
 	}
 	fmt.Printf("Couldn't determine the existence of the directory: %v\n", basepath)
-	return false
+	return false, fmt.Errorf("Failed to find or create directory for storage file.\n")
 }
 
-func checkStorageFile(basepath string) bool {
-	storageFile := basepath + "tasklist.json"
-	_, err := os.Stat(storageFile)
+func (tl *TaskList) checkStorageFile() (bool, error) {
+
+	_, err := os.Stat(tl.storageFile)
 	if err != nil {
-		fmt.Printf(Colors["red"]+"Failed to stat file at %v: %v\n"+Colors[""], storageFile, err)
+		fmt.Printf(Colors["red"]+"Failed to stat file at %v: %v\n"+Colors[""], tl.storageFile, err)
 		if errors.Is(err, os.ErrNotExist) {
-			fmt.Printf(Colors["red"]+"Error - File %v doesn't exist: %v\n"+Colors[""], storageFile, err)
-			fmt.Printf("Storage file does not exist at %s.\nCreating one...\n", storageFile)
-			return false
+			fmt.Printf(Colors["red"]+"Error - File %v doesn't exist: %v\n"+Colors[""], tl.storageFile, err)
+			fmt.Printf("Storage file does not exist at %s.\nCreating one...\n", tl.storageFile)
+			return false, fmt.Errorf("Couldn't ")
 		} else {
 			fmt.Printf("Ran into error while checking directory: %v\n", err)
 		}
 	}
 
-	_, err = os.Create(storageFile)
+	_, err = os.Create(tl.storageFile)
 
 	if err != nil {
-		fmt.Printf("Ran into error when creating file %v: %v\n", storageFile, err)
-		return false
+		fmt.Printf("Ran into error when creating file %v: %v\n", tl.storageFile, err)
+		return false, err
 	} else {
-		return true
+		return true, nil
 	}
 }
 
-func (*TaskList) LoadTaskList() {
-	basepath := os.Getenv(`HOME`) + "/.config/terminal-todo/" // Don't use tilde, no pathname expansion
-	if !checkStorageFileDir(basepath) {
-		log.Fatalf("Unable to create the storage file directory in %v\n", basepath)
+func (tl *TaskList) LoadTaskList() {
+	if _, err := checkStorageFileDir(); err != nil {
+		log.Fatalf("Unable to create the storage file directory: %v\n", err)
 	}
-	if !checkStorageFile(basepath) {
-		log.Fatalf("Unable to load storage file at %v\n", basepath)
+	if _, err := tl.checkStorageFile(); err != nil {
+		log.Fatalf("Unable to load or create storage file: %v\n", err)
 	}
 
-	storageFile := basepath + "tasklist.json"
-	log.Printf("Opening file at: %v\n", storageFile)
+	storageFileDir, err := os.UserConfigDir()
+	if err != nil {
+		log.Fatalf("Couldn't fetch user config dir: %v\n", err)
+	}
+
+	storageFile := storageFileDir + "/terminal-todo/tasklist.json"
+	log.Printf("Opening storage file - %v", storageFile)
 
 	file, err := os.Open(storageFile)
 	if err != nil {
 		log.Fatalf("Couldn't open file storage file at %v\n", storageFile)
 	}
 	defer file.Close()
-	// TODO: Add logic to check if file is empty -
-	// TODO: If not empty, parse contents into a TaskList()
 
-}
-
-func (*TaskList) SaveTaskList() {}
-
-func MakeGreeting(first string, last string) string {
-	greeting := fmt.Sprintf("Hello, %v %v", first, last)
-	return greeting
-}
-
-func (tl *TaskList) ShowType() {
-	for i := range tl.Tasks {
-		fmt.Println("Type of task:", tl.Tasks[i])
+	// Check if file is empty
+	fileInfo, err := file.Stat()
+	if err != nil {
+		log.Printf("Error while trying to stat file %v: %v", file, err)
 	}
+
+	log.Printf("Size of the file: %v", fileInfo.Size())
+	if fileInfo.Size() == 0 {
+		log.Printf("Storage file %v is empty. Creating new task list.", fileInfo.Name())
+	}
+	// TODO: If not empty, parse contents into a TaskList()
+	//       Handle NextTaskId by len(tl.Tasks) + 1
+	// TODO: Convert json contents into valid Go data structure
+	//
+	// Use encoding/json -
+	//      Marshaling: Convert struct to JSON
+	//      Unmarshaling: Convert JSON to struct
+
 }
 
-// git commit -m "go: Update notes on interfaces, move function notes to different file"
+// func (tl *TaskList) SaveTaskList() {
+// 	jsonData, err := json.MarshalIndent(tl, "", "    ")
+// 	file, err := os.Open()
+// 	if err != nil {
+// 		log.Fatalf("Failed to open file for writing: %v\n", err)
+// 	}
+// }
+
 // TODO: Add UI for these.
 // MarkComplete() marks a task as completed, changing its Completed property to true
-func (t *Task) MarkComplete()                    { t.Completed = true }
-func (t *Task) ChangeDescription(newDesc string) { t.Description = newDesc }
-func (t *Task) ChangeTitle(newTitle string)      { t.Title = newTitle }
+func (t *Task) SetComplete(complete bool)     { t.Completed = complete }
+func (t *Task) SetDescription(newDesc string) { t.Description = newDesc }
+func (t *Task) SetTitle(newTitle string)      { t.Title = newTitle }
