@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
@@ -19,25 +20,9 @@ import (
 
 func main() {
 	var tl t.TaskList = t.NewTaskList()
-	tl.LoadTaskList() // if it exists - TODO: Add file support
-
+	tl.LoadTaskList()
 	fmt.Println("Terminal TODO")
-
-	fmt.Print(`
-Select an option:
-      1. Create a new task
-      2. Remove a task
-      3. Mark a task as complete
-      4. View task list
-      5. Save task list to file
-
-    'q' or '0' to quit. 
-
-> `)
-
-	var choice int
-
-	fmt.Scanln(&choice)
+	choice := GetMainMenuInput()
 
 	s := bufio.NewScanner(os.Stdin)
 	switch choice {
@@ -55,12 +40,15 @@ Select an option:
 		s.Scan()
 		desc := s.Text()
 
-		fmt.Printf(`
-        New Task Created:
-        Title: %v
-        Description: %v
-        
-        `, title, desc)
+		newTask := t.NewTask(title, desc)
+		fmt.Println("New Task Created:")
+		newTask.ViewTask()
+		// fmt.Printf(`
+		// New Task Created:
+		// Title: %v
+		// Description: %v
+
+		// `, title, desc)
 
 		var confirmation string
 		for confirmation != "y" && confirmation != "n" && confirmation != "q" {
@@ -69,7 +57,7 @@ Select an option:
 			confirmation = s.Text()
 			switch confirmation {
 			case "y":
-				newTask := t.NewTask(title, desc)
+				// newTask := t.NewTask(title, desc)
 				tl.AddTaskToList(newTask)
 				tl.SaveTaskList()
 				break
@@ -90,19 +78,26 @@ Select an option:
 	case 2:
 		fmt.Println("--- Remove a task ---")
 		fmt.Print("Enter task ID:\n> ")
+
+		var taskId int
+		fmt.Scanln(&taskId)
+		tl.DeleteTask(taskId)
+
 		s.Scan()
 		taskToDel := s.Text()
-
 		id, err := strconv.ParseInt(taskToDel, 10, 0)
 		if err != nil {
 			fmt.Printf("Error in ParseInt: %v\n", err)
 		} else {
 			tl.DeleteTask(int(id))
 			tl.SaveTaskList()
+			fmt.Println("Task successfully deleted.")
 		}
 
 	case 3:
 		fmt.Println("Mark a task as complete.")
+		s.Scan()
+
 	case 4:
 		fmt.Println("View task list")
 		tl.ViewTaskList()
@@ -110,4 +105,38 @@ Select an option:
 		tl.SaveTaskList()
 	}
 
+}
+
+func GetMainMenuInput() int {
+	fmt.Print(`
+Select an option:
+      1. Create a new task
+      2. Remove a task
+      3. Mark a task as complete
+      4. View task list
+      5. Save task list to file
+
+    'q' or '0' to quit. 
+
+> `)
+	s := bufio.NewScanner(os.Stdin)
+	s.Scan()
+	userInput := s.Text()
+
+	if userInput == "q" || userInput == "0" {
+		return 0
+	}
+
+	inputInt, err := strconv.Atoi(userInput)
+	if err != nil || inputInt < 1 || inputInt > 5 {
+		log.Println("Invalid input. Exiting.")
+		return 0
+	}
+
+	return 0
+}
+
+func GetNewTaskInput() t.Task {
+	// s := bufio.NewScanner(os.Stdin)
+	return t.Task{}
 }
