@@ -81,17 +81,21 @@ func (tl *TaskList) DeleteTask(id int) {
 		}
 
 	}
+	fmt.Printf("Couldn't find a task with the given ID: %v\n", id)
 }
 
 func (t *Task) formatTaskOutput() string {
 	outputStr := fmt.Sprintf(`
-    - Task
-      %vTitle: %v
-      %vDescription: %v
-      %vCompleted: %v
-      ID: %v
+    - Task (ID: %v)
+        - %vTitle: 
+                %v
+        - %vDescription: 
+                %v
+        - %vCompleted: 
+                %v
       %v
     `,
+		t.Id,
 		Colors["cyan"],
 		Colors[""]+
 			t.Title,
@@ -100,10 +104,14 @@ func (t *Task) formatTaskOutput() string {
 			t.Description,
 		CompletedColor[t.Completed],
 		t.Completed,
-		t.Id,
 		Colors[""],
 	)
 	return outputStr
+}
+
+func (t *Task) ViewTask() {
+	outputStr := t.formatTaskOutput()
+	fmt.Printf(outputStr)
 }
 
 // ViewTaskList Outputs the current task list to the terminal
@@ -195,6 +203,7 @@ func (tl *TaskList) checkStorageFile() (bool, error) {
 	}
 }
 
+// TODO: Allow user to specify file to load (allow user to save multiple task lists)
 func (tl *TaskList) LoadTaskList() {
 	if _, err := checkStorageFileDir(); err != nil {
 		log.Fatalf("Unable to create the storage file directory: %v\n", err)
@@ -233,18 +242,10 @@ func (tl *TaskList) LoadTaskList() {
 		log.Fatalf("Failed to read in contents of json file: %v\n", err)
 	}
 
-	fmt.Printf(Colors["green"]+"New Task list (from json):\n%v\n", tl)
-	fmt.Printf(Colors["green"]+"nextTaskID: %v \n", tl.NextTaskId)
+	fmt.Printf(Colors["green"]+"Task list loaded from json file %v\n", tl.storageFile)
+	fmt.Printf(Colors["green"]+"NextTaskID: %v \n", tl.NextTaskId)
 
 	tl.ViewTaskList()
-	// TODO: If not empty, parse contents into a TaskList()
-	//       Handle NextTaskId by len(tl.Tasks) + 1
-	// TODO: Convert json contents into valid Go data structure
-	//
-	// Use encoding/json -
-	//      Marshaling: Convert struct to JSON
-	//      Unmarshaling: Convert JSON to struct
-
 }
 
 func (tl *TaskList) SaveTaskList() {
