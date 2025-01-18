@@ -28,6 +28,7 @@ func main() {
 	switch choice {
 	case 0:
 		// User entered zero or a non-digit
+		log.Println("Case 0 hit.")
 		fmt.Println("Exiting.")
 		os.Exit(0)
 	case 1:
@@ -43,12 +44,6 @@ func main() {
 		newTask := t.NewTask(title, desc)
 		fmt.Println("New Task Created:")
 		newTask.ViewTask()
-		// fmt.Printf(`
-		// New Task Created:
-		// Title: %v
-		// Description: %v
-
-		// `, title, desc)
 
 		var confirmation string
 		for confirmation != "y" && confirmation != "n" && confirmation != "q" {
@@ -79,9 +74,9 @@ func main() {
 		fmt.Println("--- Remove a task ---")
 		fmt.Print("Enter task ID:\n> ")
 
-		var taskId int
-		fmt.Scanln(&taskId)
-		tl.DeleteTask(taskId)
+		// var taskId int
+		// fmt.Scanln(&taskId)
+		// tl.DeleteTask(taskId)
 
 		s.Scan()
 		taskToDel := s.Text()
@@ -96,7 +91,15 @@ func main() {
 
 	case 3:
 		fmt.Println("Mark a task as complete.")
+		fmt.Print("Enter Task ID:\n> ")
 		s.Scan()
+		taskId := s.Text()
+		parsedId, err := strconv.Atoi(taskId)
+		if err != nil {
+			fmt.Printf("Couldn't parse input: %v\n", err)
+		}
+		tl.SetComplete(parsedId, true)
+		tl.SaveTaskList()
 
 	case 4:
 		fmt.Println("View task list")
@@ -127,13 +130,13 @@ Select an option:
 		return 0
 	}
 
-	inputInt, err := strconv.Atoi(userInput)
-	if err != nil || inputInt < 1 || inputInt > 5 {
-		log.Println("Invalid input. Exiting.")
+	parsedInput, err := strconv.Atoi(userInput)
+	if err != nil || parsedInput < 1 || parsedInput > 5 {
+		log.Println("Invalid input.")
 		return 0
 	}
 
-	return 0
+	return parsedInput
 }
 
 func GetNewTaskInput() t.Task {

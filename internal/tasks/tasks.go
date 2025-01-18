@@ -25,10 +25,11 @@ var CompletedColor = map[bool]string{
 	false: Colors["red"],
 }
 
+// TODO: Add "date/time added" and "date/time completed"
 type Task struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
-	Completed   bool   `json:"completed"`
+	Complete    bool   `json:"complete"`
 	Id          int    `json:"id"`
 }
 
@@ -36,7 +37,7 @@ type TaskList struct {
 	Tasks       []Task `json:"tasks"`
 	NextTaskId  int    `json:"nextTaskId"`
 	storageFile string
-	// TODO: Map task IDs to tasks for easier management/deletion
+	// TODO: Map task IDs to tasks for easier management/deletion?
 	// TaskIndex map[int]*Task
 }
 
@@ -57,7 +58,7 @@ func NewTask(title, desc string) Task {
 	t := Task{
 		Title:       title,
 		Description: desc,
-		Completed:   false,
+		Complete:    false,
 	}
 	return t
 }
@@ -91,7 +92,7 @@ func (t *Task) formatTaskOutput() string {
                 %v
         - %vDescription: 
                 %v
-        - %vCompleted: 
+        - %vComplete: 
                 %v
       %v
     `,
@@ -102,8 +103,8 @@ func (t *Task) formatTaskOutput() string {
 		Colors["yellow"],
 		Colors[""]+
 			t.Description,
-		CompletedColor[t.Completed],
-		t.Completed,
+		CompletedColor[t.Complete],
+		t.Complete,
 		Colors[""],
 	)
 	return outputStr
@@ -138,7 +139,7 @@ func (tl *TaskList) ViewCompletedTasks() {
 func (tl *TaskList) GetCompletedTasks() []*Task {
 	var ct []*Task
 	for idx := range tl.Tasks {
-		if tl.Tasks[idx].Completed {
+		if tl.Tasks[idx].Complete {
 			ct = append(ct, &tl.Tasks[idx])
 		}
 	}
@@ -259,8 +260,8 @@ func (tl *TaskList) SaveTaskList() {
 		log.Fatalf("Couldn't marshal data to json: %v\n", err)
 	}
 	fmt.Printf("Writing task list to file %v\n", tl.storageFile)
-	fmt.Printf("Data being written:\n%v\n", tl)
-	fmt.Printf("jsonData being written:\n%v\n", jsonData)
+	// log.Printf("Data being written:\n%v\n", tl)
+	// log.Printf("jsonData being written:\n%v\n", jsonData)
 	bw, err := file.Write(jsonData)
 	if err != nil {
 		log.Fatalf("Couldn't write to file: %v\n", err)
@@ -270,6 +271,20 @@ func (tl *TaskList) SaveTaskList() {
 
 // TODO: Add UI for these.
 // MarkComplete() marks a task as completed, changing its Completed property to true
-func (t *Task) SetComplete(complete bool)     { t.Completed = complete }
+// Optionally, pass 'false' as the second argument to mark the task as incomplete.
+func (tl *TaskList) SetComplete(id int, state ...bool) {
+	var completionState bool = true
+	if len(state) > 0 {
+		completionState = state[0]
+	}
+	for i := 0; i < len(tl.Tasks); i++ {
+		if tl.Tasks[i].Id == id {
+			tl.Tasks[i].Complete = completionState
+			fmt.Println("Task marked as complete.")
+			tl.Tasks[i].ViewTask()
+		}
+	}
+}
+
 func (t *Task) SetDescription(newDesc string) { t.Description = newDesc }
 func (t *Task) SetTitle(newTitle string)      { t.Title = newTitle }
