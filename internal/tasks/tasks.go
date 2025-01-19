@@ -1,11 +1,14 @@
 package tasks
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"time"
 )
 
 var Colors = map[string]string{
@@ -27,10 +30,11 @@ var CompletedColor = map[bool]string{
 
 // TODO: Add "date/time added" and "date/time completed"
 type Task struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Complete    bool   `json:"complete"`
-	Id          int    `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Complete    bool      `json:"complete"`
+	Id          int       `json:"id"`
+	TimeAdded   time.Time `json:"dateAdded"`
 }
 
 type TaskList struct {
@@ -55,10 +59,13 @@ func NewTaskList() TaskList {
 
 // Constructor for Task
 func NewTask(title, desc string) Task {
+	currentTime := time.Now()
+
 	t := Task{
 		Title:       title,
 		Description: desc,
 		Complete:    false,
+		TimeAdded:   currentTime,
 	}
 	return t
 }
@@ -80,14 +87,13 @@ func (tl *TaskList) DeleteTask(id int) {
 			log.Printf("DONE: Number of tasks: %v\n", len(tl.Tasks))
 			return
 		}
-
 	}
 	fmt.Printf("Couldn't find a task with the given ID: %v\n", id)
 }
 
 func (t *Task) formatTaskOutput() string {
 	outputStr := fmt.Sprintf(`
-    - Task (ID: %v)
+    - Task (ID: %v) (added: %v)
         - %vTitle: 
                 %v
         - %vDescription: 
@@ -97,6 +103,8 @@ func (t *Task) formatTaskOutput() string {
       %v
     `,
 		t.Id,
+		// t.TimeAdded.Local().Format("TimeOnly")+t.TimeAdded.Local().Format("DateOnly"),
+		t.TimeAdded.Local().Format("Jan 02 2006"),
 		Colors["cyan"],
 		Colors[""]+
 			t.Title,
@@ -238,15 +246,16 @@ func (tl *TaskList) LoadTaskList() {
 		log.Printf("Storage file %v is empty. Using new task list.\n", fileInfo.Name())
 		return
 	}
+
 	decoder := json.NewDecoder(file)
 	if err = decoder.Decode(tl); err != nil {
 		log.Fatalf("Failed to read in contents of json file: %v\n", err)
 	}
 
 	fmt.Printf(Colors["green"]+"Task list loaded from json file %v\n", tl.storageFile)
-	fmt.Printf(Colors["green"]+"NextTaskID: %v \n", tl.NextTaskId)
+	fmt.Printf(Colors["green"]+"NextTaskID: %v \n"+Colors[""], tl.NextTaskId)
 
-	tl.ViewTaskList()
+	// tl.ViewTaskList()
 }
 
 func (tl *TaskList) SaveTaskList() {
@@ -260,8 +269,6 @@ func (tl *TaskList) SaveTaskList() {
 		log.Fatalf("Couldn't marshal data to json: %v\n", err)
 	}
 	fmt.Printf("Writing task list to file %v\n", tl.storageFile)
-	// log.Printf("Data being written:\n%v\n", tl)
-	// log.Printf("jsonData being written:\n%v\n", jsonData)
 	bw, err := file.Write(jsonData)
 	if err != nil {
 		log.Fatalf("Couldn't write to file: %v\n", err)
@@ -288,3 +295,94 @@ func (tl *TaskList) SetComplete(id int, state ...bool) {
 
 func (t *Task) SetDescription(newDesc string) { t.Description = newDesc }
 func (t *Task) SetTitle(newTitle string)      { t.Title = newTitle }
+
+func (tl *TaskList) GetNewTaskInput() Task {
+	s := bufio.NewScanner(os.Stdin)
+	fmt.Println("--- Add a task ---")
+	fmt.Print("New task name: ")
+	s.Scan()
+	title := s.Text()
+
+	fmt.Print("New Task description: ")
+	s.Scan()
+	desc := s.Text()
+
+	newTask := NewTask(title, desc)
+	fmt.Println("New Task Created:")
+	newTask.ViewTask()
+
+	var confirmation string
+	for confirmation != "y" && confirmation != "n" && confirmation != "q" {
+		fmt.Printf("Create this task? [y/N (q to quit)] ")
+		s.Scan()
+		confirmation = s.Text()
+		switch confirmation {
+		case "y":
+			// newTask := t.NewTask(title, desc)
+			return newTask
+		case "n":
+			fmt.Println("OK - Discarding task.")
+			break
+		case "q":
+			fmt.Println("Exiting.")
+			os.Exit(0)
+			break
+		default:
+			fmt.Println("Invalid selection. ")
+		}
+		return Task{}
+	}
+	return Task{}
+}
+
+func (tl *TaskList) HandleArgs() {
+	log.Println(Colors["green"] + "Hitting the HandleArgs fn" + Colors[""])
+	if len(os.Args) > 0 {
+		log.Println(Colors["green"] + "Detected cli args" + Colors[""])
+		switch os.Args[1] { // script name is Args[0]
+		case "add":
+			log.Println(Colors["green"] + "Hit the Add case" + Colors[""])
+			newT := tl.GetNewTaskInput()
+			tl.AddTaskToList(newT)
+			tl.SaveTaskList()
+		case "delete":
+			log.Println(Colors["green"] + "Hit the Delete case" + Colors[""])
+
+			if len(os.Args) > 1 {
+				log.Printf(Colors["green"]+"Detected the 2nd argument: %v\n"+Colors[""], os.Args[1])
+				// take ID as an argument
+				argId := os.Args[2]
+
+				if argId != "0" {
+					taskToDel, err := strconv.ParseInt(argId, 10, 0)
+					if err != nil {
+						log.Fatalf("Failed to parse argument %v into int: %v\n", taskToDel, err)
+					} else {
+						id := int(taskToDel)
+						tl.DeleteTask(id)
+						tl.SaveTaskList()
+						fmt.Printf("Task deleted: ID %v\n", tl.Tasks[id].Id)
+						os.Exit(0)
+					}
+				}
+			} else {
+				s := bufio.NewScanner(os.Stdin)
+				fmt.Println("--- Remove a task ---")
+				fmt.Print("Enter task ID:\n> ")
+				s.Scan()
+				taskToDel := s.Text()
+				id, err := strconv.ParseInt(taskToDel, 10, 0)
+				if err != nil {
+					fmt.Printf("Error in ParseInt: %v\n", err)
+				} else {
+					tl.DeleteTask(int(id))
+					tl.SaveTaskList()
+					fmt.Println("Task successfully deleted.")
+					os.Exit(0)
+				}
+
+			}
+
+		}
+	}
+}

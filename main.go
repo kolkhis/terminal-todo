@@ -10,17 +10,12 @@ import (
 	t "github.com/kolkhis/terminal-todo/internal/tasks"
 )
 
-// func HandleArgs() {
-//     if len(os.Args) > 0 {
-//         switch os.Args[0] {
-//         case "add":
-//         }
-//     }
-// }
+// TODO: Check out BubbleTea
 
 func main() {
 	var tl t.TaskList = t.NewTaskList()
 	tl.LoadTaskList()
+	tl.HandleArgs()
 	fmt.Println("Terminal TODO")
 	choice := GetMainMenuInput()
 
@@ -32,52 +27,15 @@ func main() {
 		fmt.Println("Exiting.")
 		os.Exit(0)
 	case 1:
-		fmt.Println("--- Add a task ---")
-		fmt.Print("New task name: ")
-		s.Scan()
-		title := s.Text()
-
-		fmt.Print("New Task description: ")
-		s.Scan()
-		desc := s.Text()
-
-		newTask := t.NewTask(title, desc)
-		fmt.Println("New Task Created:")
-		newTask.ViewTask()
-
-		var confirmation string
-		for confirmation != "y" && confirmation != "n" && confirmation != "q" {
-			fmt.Printf("Create this task? [y/N (q to quit)] ")
-			s.Scan()
-			confirmation = s.Text()
-			switch confirmation {
-			case "y":
-				// newTask := t.NewTask(title, desc)
-				tl.AddTaskToList(newTask)
-				tl.SaveTaskList()
-				break
-			case "n":
-				fmt.Println("OK - Discarding task.")
-				break
-			case "q":
-				fmt.Println("Exiting.")
-				os.Exit(0)
-				break
-			default:
-				fmt.Println("Invalid selection. ")
-			}
-		}
-
+		newTask := tl.GetNewTaskInput()
+		tl.AddTaskToList(newTask)
+		tl.SaveTaskList()
 		fmt.Println("Current tasks:")
 		tl.ViewTaskList()
+
 	case 2:
 		fmt.Println("--- Remove a task ---")
 		fmt.Print("Enter task ID:\n> ")
-
-		// var taskId int
-		// fmt.Scanln(&taskId)
-		// tl.DeleteTask(taskId)
-
 		s.Scan()
 		taskToDel := s.Text()
 		id, err := strconv.ParseInt(taskToDel, 10, 0)
@@ -88,6 +46,9 @@ func main() {
 			tl.SaveTaskList()
 			fmt.Println("Task successfully deleted.")
 		}
+		// var taskId int
+		// fmt.Scanln(&taskId)
+		// tl.DeleteTask(taskId)
 
 	case 3:
 		fmt.Println("Mark a task as complete.")
@@ -137,9 +98,4 @@ Select an option:
 	}
 
 	return parsedInput
-}
-
-func GetNewTaskInput() t.Task {
-	// s := bufio.NewScanner(os.Stdin)
-	return t.Task{}
 }
