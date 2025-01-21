@@ -81,7 +81,7 @@ func (tl *TaskList) DeleteTask(id int) {
 	log.Printf("START: Number of tasks: %v\n", len(tl.Tasks))
 	for i := len(tl.Tasks) - 1; i >= 0; i-- {
 		if id == tl.Tasks[i].Id {
-			tl.Tasks = append(tl.Tasks[:i], tl.Tasks[i+1:]...) //TODO: Handle when it's the last element
+			tl.Tasks = append(tl.Tasks[:i], tl.Tasks[i+1:]...)
 			log.Printf("%vAppend operation complete%v\n", Colors["green"], Colors[""])
 			tl.ViewTaskList()
 			log.Printf("DONE: Number of tasks: %v\n", len(tl.Tasks))
@@ -127,8 +127,8 @@ func (t *Task) ViewTask() {
 // TODO: Add method (or option) to show only incomplete tasks, and only complete tasks
 func (tl *TaskList) ViewTaskList() {
 	fmt.Println("\033[32m--- All tasks ---\033[0m")
-	for idx := range tl.Tasks {
-		output := tl.Tasks[idx].formatTaskOutput()
+	for _, t := range tl.Tasks {
+		output := t.formatTaskOutput()
 		fmt.Println(output)
 	}
 }
@@ -136,8 +136,8 @@ func (tl *TaskList) ViewTaskList() {
 func (tl *TaskList) ViewCompletedTasks() {
 	fmt.Println("--- Completed Tasks ---")
 	completedTasks := tl.GetCompletedTasks()
-	for idx := range completedTasks {
-		output := completedTasks[idx].formatTaskOutput()
+	for _, t := range completedTasks {
+		output := t.formatTaskOutput()
 		fmt.Println(output)
 	}
 }
@@ -146,8 +146,8 @@ func (tl *TaskList) ViewCompletedTasks() {
 // TaskList that are marked as complete.
 func (tl *TaskList) GetCompletedTasks() []*Task {
 	var ct []*Task
-	for idx := range tl.Tasks {
-		if tl.Tasks[idx].Complete {
+	for idx, t := range tl.Tasks {
+		if t.Complete {
 			ct = append(ct, &tl.Tasks[idx])
 		}
 	}
@@ -212,7 +212,8 @@ func (tl *TaskList) checkStorageFile() (bool, error) {
 	}
 }
 
-// TODO: Allow user to specify file to load (allow user to save multiple task lists)
+// TODO: Allow user to specify file to load
+//   - TODO: Allow user to save multiple task lists
 func (tl *TaskList) LoadTaskList() {
 	if _, err := checkStorageFileDir(); err != nil {
 		log.Fatalf("Unable to create the storage file directory: %v\n", err)
@@ -276,13 +277,15 @@ func (tl *TaskList) SaveTaskList() {
 }
 
 // TODO: Add UI for these.
-// MarkComplete() marks a task as completed, changing its Completed property to true
+// SetComplete() marks a task as completed, changing its Completed property to true
 // Optionally, pass 'false' as the second argument to mark the task as incomplete.
+// Pass in the Task item's Id attribute along with the desired state (true or false).
 func (tl *TaskList) SetComplete(id int, state ...bool) {
 	var completionState bool = true
 	if len(state) > 0 {
 		completionState = state[0]
 	}
+
 	for i := 0; i < len(tl.Tasks); i++ {
 		if tl.Tasks[i].Id == id {
 			tl.Tasks[i].Complete = completionState
@@ -290,6 +293,7 @@ func (tl *TaskList) SetComplete(id int, state ...bool) {
 			tl.Tasks[i].ViewTask()
 		}
 	}
+
 }
 
 func (t *Task) SetDescription(newDesc string) { t.Description = newDesc }
