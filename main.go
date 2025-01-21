@@ -15,7 +15,10 @@ import (
 func main() {
 	var tl t.TaskList = t.NewTaskList()
 	tl.LoadTaskList()
-	tl.HandleArgs()
+	if len(os.Args) > 1 {
+		tl.ParseArgs()
+	}
+
 	fmt.Println("Terminal TODO")
 	choice := GetMainMenuInput()
 
@@ -26,6 +29,7 @@ func main() {
 		log.Println("Case 0 hit.")
 		fmt.Println("Exiting.")
 		os.Exit(0)
+
 	case 1:
 		newTask := tl.GetNewTaskInput()
 		tl.AddTaskToList(newTask)
@@ -65,8 +69,10 @@ func main() {
 	case 4:
 		fmt.Println("View task list")
 		tl.ViewTaskList()
+
 	case 5:
 		tl.SaveTaskList()
+
 	}
 
 }

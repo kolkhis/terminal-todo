@@ -255,7 +255,6 @@ func (tl *TaskList) LoadTaskList() {
 	fmt.Printf(Colors["green"]+"Task list loaded from json file %v\n", tl.storageFile)
 	fmt.Printf(Colors["green"]+"NextTaskID: %v \n"+Colors[""], tl.NextTaskId)
 
-	// tl.ViewTaskList()
 }
 
 func (tl *TaskList) SaveTaskList() {
@@ -335,9 +334,9 @@ func (tl *TaskList) GetNewTaskInput() Task {
 	return Task{}
 }
 
-func (tl *TaskList) HandleArgs() {
+func (tl *TaskList) ParseArgs() {
 	log.Println(Colors["green"] + "Hitting the HandleArgs fn" + Colors[""])
-	if len(os.Args) > 0 {
+	if len(os.Args) > 1 {
 		log.Println(Colors["green"] + "Detected cli args" + Colors[""])
 		switch os.Args[1] { // script name is Args[0]
 		case "add":
@@ -385,4 +384,5 @@ func (tl *TaskList) HandleArgs() {
 
 		}
 	}
+
 }
