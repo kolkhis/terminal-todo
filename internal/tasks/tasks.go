@@ -73,7 +73,6 @@ func NewTask(title, desc string) Task {
 func (tl *TaskList) AddTaskToList(t Task) {
 	t.Id = tl.NextTaskId
 	tl.Tasks = append(tl.Tasks, t)
-	// tl.TaskIndex[t.Id] = &tl.Tasks[len(tl.Tasks)-1]
 	tl.NextTaskId++
 }
 
@@ -133,9 +132,22 @@ func (tl *TaskList) ViewTaskList() {
 	}
 }
 
-func (tl *TaskList) ViewCompletedTasks() {
+func (tl *TaskList) ViewCompleteTasks() {
 	fmt.Println("--- Completed Tasks ---")
-	completedTasks := tl.GetCompletedTasks()
+	completedTasks := tl.GetCompleteTasks()
+	if len(completedTasks) == 0 {
+		fmt.Println("You have no completed tasks!")
+		return
+	}
+	for _, t := range completedTasks {
+		output := t.formatTaskOutput()
+		fmt.Println(output)
+	}
+}
+
+func (tl *TaskList) ViewIncompleteTasks() {
+	fmt.Println("--- Completed Tasks ---")
+	completedTasks := tl.GetIncompleteTasks()
 	for _, t := range completedTasks {
 		output := t.formatTaskOutput()
 		fmt.Println(output)
@@ -144,7 +156,19 @@ func (tl *TaskList) ViewCompletedTasks() {
 
 // Return a slice containing pointers/references to the actual tasks in the main
 // TaskList that are marked as complete.
-func (tl *TaskList) GetCompletedTasks() []*Task {
+func (tl *TaskList) GetIncompleteTasks() []*Task {
+	var it []*Task
+	for idx, t := range tl.Tasks {
+		if !t.Complete {
+			it = append(it, &tl.Tasks[idx])
+		}
+	}
+	return it
+}
+
+// Return a slice containing pointers/references to the actual tasks in the main
+// TaskList that are marked as complete.
+func (tl *TaskList) GetCompleteTasks() []*Task {
 	var ct []*Task
 	for idx, t := range tl.Tasks {
 		if t.Complete {
@@ -212,7 +236,7 @@ func (tl *TaskList) checkStorageFile() (bool, error) {
 	}
 }
 
-// TODO: Allow user to specify file to load
+// TODO: Allow user to specify file to load (read from configuraiton file?)
 //   - TODO: Allow user to save multiple task lists
 func (tl *TaskList) LoadTaskList() {
 	if _, err := checkStorageFileDir(); err != nil {
@@ -299,9 +323,9 @@ func (tl *TaskList) SetComplete(id int, state ...bool) {
 func (t *Task) SetDescription(newDesc string) { t.Description = newDesc }
 func (t *Task) SetTitle(newTitle string)      { t.Title = newTitle }
 
-func (tl *TaskList) GetNewTaskInput() Task {
+func (tl *TaskList) GetNewTaskInput() (Task, error) {
 	s := bufio.NewScanner(os.Stdin)
-	fmt.Println("--- Add a task ---")
+	fmt.Println(Colors["green"] + "--- Add a task ---" + Colors[""])
 	fmt.Print("New task name: ")
 	s.Scan()
 	title := s.Text()
@@ -321,8 +345,7 @@ func (tl *TaskList) GetNewTaskInput() Task {
 		confirmation = s.Text()
 		switch confirmation {
 		case "y":
-			// newTask := t.NewTask(title, desc)
-			return newTask
+			return newTask, nil
 		case "n":
 			fmt.Println("OK - Discarding task.")
 			break
@@ -333,59 +356,112 @@ func (tl *TaskList) GetNewTaskInput() Task {
 		default:
 			fmt.Println("Invalid selection. ")
 		}
-		return Task{}
+		return Task{}, fmt.Errorf("Couldn't parse user input.\n")
 	}
-	return Task{}
+	return Task{}, fmt.Errorf("Couldn't parse user input.\n")
 }
 
+// Only call if len(os.Args) > 1
 func (tl *TaskList) ParseArgs() {
-	log.Println(Colors["green"] + "Hitting the HandleArgs fn" + Colors[""])
-	if len(os.Args) > 1 {
-		log.Println(Colors["green"] + "Detected cli args" + Colors[""])
-		switch os.Args[1] { // script name is Args[0]
-		case "add":
-			log.Println(Colors["green"] + "Hit the Add case" + Colors[""])
-			newT := tl.GetNewTaskInput()
-			tl.AddTaskToList(newT)
-			tl.SaveTaskList()
-		case "delete":
-			log.Println(Colors["green"] + "Hit the Delete case" + Colors[""])
 
-			if len(os.Args) > 1 {
-				log.Printf(Colors["green"]+"Detected the 2nd argument: %v\n"+Colors[""], os.Args[1])
-				// take ID as an argument
-				argId := os.Args[2]
+	if len(os.Args) == 1 {
+		return
+	}
 
-				if argId != "0" {
-					taskToDel, err := strconv.ParseInt(argId, 10, 0)
-					if err != nil {
-						log.Fatalf("Failed to parse argument %v into int: %v\n", taskToDel, err)
-					} else {
-						id := int(taskToDel)
-						tl.DeleteTask(id)
-						tl.SaveTaskList()
-						fmt.Printf("Task deleted: ID %v\n", tl.Tasks[id].Id)
-						os.Exit(0)
-					}
-				}
-			} else {
-				s := bufio.NewScanner(os.Stdin)
-				fmt.Println("--- Remove a task ---")
-				fmt.Print("Enter task ID:\n> ")
-				s.Scan()
-				taskToDel := s.Text()
-				id, err := strconv.ParseInt(taskToDel, 10, 0)
+	// debug cli args
+	for i, v := range os.Args {
+		fmt.Printf("DEBUG: Argument %v: %v\n", i, v)
+	}
+
+	log.Println(Colors["green"] + "Detected cli args" + Colors[""])
+
+	switch os.Args[1] { // script name is Args[0]
+	case "add":
+		log.Println(Colors["green"] + "Add a task" + Colors[""])
+		newT, err := tl.GetNewTaskInput()
+		if err != nil {
+			fmt.Printf("Couldn't create new task. Reason: %v\n", err)
+			return
+		}
+		tl.AddTaskToList(newT)
+		tl.SaveTaskList()
+	case "delete":
+		log.Println(Colors["green"] + "Hit the Delete case" + Colors[""])
+
+		if len(os.Args) > 2 {
+			log.Printf(Colors["green"]+"Detected the 2nd argument: %v\n"+Colors[""], os.Args[1])
+			// take ID as an argument
+			argId := os.Args[2]
+
+			if argId != "0" {
+				taskToDel, err := strconv.ParseInt(argId, 10, 0)
 				if err != nil {
-					fmt.Printf("Error in ParseInt: %v\n", err)
+					log.Fatalf("Failed to parse argument %v into int: %v\n", taskToDel, err)
 				} else {
-					tl.DeleteTask(int(id))
+					id := int(taskToDel)
+					tl.DeleteTask(id)
+					fmt.Printf("Task deleted: ID %v\n", tl.Tasks[id].Id)
 					tl.SaveTaskList()
-					fmt.Println("Task successfully deleted.")
 					os.Exit(0)
 				}
-
+			}
+		} else {
+			s := bufio.NewScanner(os.Stdin)
+			fmt.Println("--- Remove a task ---")
+			fmt.Print("Enter task ID:\n> ")
+			s.Scan()
+			taskToDel := s.Text()
+			id, err := strconv.ParseInt(taskToDel, 10, 0)
+			if err != nil {
+				fmt.Printf("Error in ParseInt: %v\n", err)
+			} else {
+				tl.DeleteTask(int(id))
+				tl.SaveTaskList()
+				fmt.Println("Task successfully deleted.")
+				os.Exit(0)
 			}
 
+		}
+
+	case "complete":
+		var id int
+		if len(os.Args) > 2 {
+			var err error
+			id, err = strconv.Atoi(os.Args[2])
+			if err != nil {
+				log.Fatalf("Failed to parse ID argument: %v\n", err)
+			}
+		} else {
+			fmt.Print("Enter task ID to mark as complete:\n> ")
+			fmt.Scanln(&id)
+			log.Printf("DEBUG: ID read from user input: %v\n", id)
+		}
+
+		// Check that the task with the given ID exists
+		var taskExists bool // zero-initialized to false
+		for _, t := range tl.Tasks {
+			if t.Id == id {
+				fmt.Printf(Colors["green"]+"Task with id '%v' found: %v\n"+Colors[""], id, t.Title)
+				taskExists = true
+			}
+		}
+
+		if !taskExists {
+			log.Fatalf(Colors["red"]+"Couldn't find the task with the given ID (%v)!\n"+Colors[""], id)
+		}
+
+		fmt.Printf("Mark task %v as complete? [y/N]:\n> ", id)
+		s := bufio.NewScanner(os.Stdin)
+		s.Scan()
+		if s.Text() == "y" || s.Text() == "yes" {
+			tl.SetComplete(id, true)
+			tl.SaveTaskList()
+			os.Exit(0)
+		} else if s.Text() == "n" || s.Text() == "N" {
+			fmt.Println("Discarding input.")
+			os.Exit(0)
+		} else {
+			log.Fatalln("Invalid input! Exiting.")
 		}
 	}
 
