@@ -14,6 +14,8 @@ import (
 const HELPSTRING string = `
 Usage: terminal-todo [command] [options]
 
+Run without commands or options to use interactively.
+
 Commands:
   help | h                  View this help message and exit
   add | new | create        Add a new task (interactive input)
@@ -32,10 +34,6 @@ Examples:
   terminal-todo complete 1
   terminal-todo view complete
   terminal-todo ls incomplete
-
-Additional Help:
-  Run 'terminal-todo help' to display this menu.
-
 `
 
 var Colors = map[string]string{
@@ -215,7 +213,6 @@ func checkStorageFileDir() (bool, error) {
 	}
 	basepath := configDir + "/terminal-todo/"
 
-	fmt.Printf("\033[31m --- Base path for storage file: %v ---\n\033[0m", basepath)
 	fileInfo, err := os.Stat(basepath)
 	if err != nil {
 		fmt.Printf("Failed to stat directory at %v: %v\n", basepath, err)
@@ -247,7 +244,7 @@ func (tl *TaskList) checkStorageFile() (bool, error) {
 		}
 	} else {
 		if info.Mode().IsRegular() {
-			fmt.Printf("Regular file found at %v\n", info.Name())
+			// fmt.Printf("Regular file found at %v\n", info.Name())
 			return true, nil
 		}
 		return false, fmt.Errorf("Storage file %v is not a regular file. FileMode: %v\n", info.Name(), info.Mode())
@@ -279,7 +276,7 @@ func (tl *TaskList) LoadTaskList() {
 	}
 
 	storageFile := storageFileDir + "/terminal-todo/tasklist.json"
-	log.Printf("Opening storage file - %v", storageFile)
+	// log.Printf("Opening storage file - %v", storageFile)
 
 	file, err := os.Open(storageFile)
 	if err != nil {
@@ -304,8 +301,8 @@ func (tl *TaskList) LoadTaskList() {
 		log.Fatalf("Failed to read in contents of json file: %v\n", err)
 	}
 
-	fmt.Printf(Colors["green"]+"Task list loaded from json file %v\n", tl.storageFile)
-	fmt.Printf(Colors["green"]+"NextTaskID: %v \n"+Colors[""], tl.NextTaskId)
+	fmt.Printf(Colors["green"]+"Task list loaded from json file %v\n"+Colors[""], tl.storageFile)
+	// fmt.Printf(Colors["green"]+"NextTaskID: %v \n"+Colors[""], tl.NextTaskId)
 
 }
 
