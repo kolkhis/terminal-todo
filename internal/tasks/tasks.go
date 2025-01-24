@@ -11,6 +11,33 @@ import (
 	"time"
 )
 
+const HELPSTRING string = `
+Usage: terminal-todo [command] [options]
+
+Commands:
+  help | h                  View this help message and exit
+  add | new | create        Add a new task (interactive input)
+  delete | del | rm         Remove a task by ID (e.g. terminal-todo delete 3)
+  complete | c | finish     Mark a task as complete (e.g. terminal-todo complete 3)
+  ls | list | view          View tasks (all, complete, or incomplete)
+
+Options for 'view'/'ls' command:
+  view all | a                          Show all tasks
+  view complete | done | finished | c   Show completed tasks
+  view incomplete | unfinished | ic     Show incomplete tasks
+
+Examples:
+  terminal-todo add
+  terminal-todo delete 2
+  terminal-todo complete 1
+  terminal-todo view complete
+  terminal-todo ls incomplete
+
+Additional Help:
+  Run 'terminal-todo help' to display this menu.
+
+`
+
 var Colors = map[string]string{
 	"black":   "\033[30m",
 	"red":     "\033[31m",
@@ -376,7 +403,7 @@ func (tl *TaskList) ParseArgs() {
 	log.Println(Colors["green"] + "Detected cli args" + Colors[""])
 
 	switch os.Args[1] { // script name is Args[0]
-	case "add":
+	case "add", "a", "create", "new", "n":
 		log.Println(Colors["green"] + "Add a task" + Colors[""])
 		newT, err := tl.GetNewTaskInput()
 		if err != nil {
@@ -385,7 +412,8 @@ func (tl *TaskList) ParseArgs() {
 		}
 		tl.AddTaskToList(newT)
 		tl.SaveTaskList()
-	case "delete":
+
+	case "delete", "del", "d", "rm", "remove":
 		log.Println(Colors["green"] + "Hit the Delete case" + Colors[""])
 
 		if len(os.Args) > 2 {
@@ -423,7 +451,8 @@ func (tl *TaskList) ParseArgs() {
 
 		}
 
-	case "complete":
+	// TODO: Add support to mark tasks as incomplete?
+	case "complete", "finish", "comp", "fin":
 		var id int
 		if len(os.Args) > 2 {
 			var err error
@@ -463,6 +492,30 @@ func (tl *TaskList) ParseArgs() {
 		} else {
 			log.Fatalln("Invalid input! Exiting.")
 		}
+
+	case "view", "ls", "list":
+		if len(os.Args) > 2 {
+			switch os.Args[2] {
+			case "done", "complete", "c", "finished", "comp":
+				tl.ViewCompleteTasks()
+				os.Exit(0)
+			case "unfinished", "incomplete", "ic", "pending":
+				tl.ViewIncompleteTasks()
+				os.Exit(0)
+			case "all", "a":
+				tl.ViewTaskList()
+			default:
+				tl.ViewTaskList()
+				os.Exit(0)
+			}
+		}
+
+		tl.ViewIncompleteTasks()
+		os.Exit(0)
+
+	case "help", "h":
+		fmt.Println(Colors["cyan"] + HELPSTRING + Colors[""])
+		os.Exit(0)
 	}
 
 }
