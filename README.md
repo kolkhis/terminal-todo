@@ -43,4 +43,12 @@ Choice between two different modes
 - One-off ad-hoc command mode
 - Support for multiple task lists
 
+- Pager for viewing tasks (like less)
+
+---
+
+* Uses IDs to identify tasks. 
+* ID is incremented with each added task.  
+* If manually adding tasks, incrememnt "nextTaskId" in `tasklist.json`.  
+
 
